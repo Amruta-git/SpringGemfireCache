@@ -1,0 +1,63 @@
+** How to Run ***
+--> POST --> http://localhost:8090/jp/genesis/bulk/employees
+Request Body:
+[
+    {
+        "emp_no": 10013,
+        "birth_date": "1963-06-07",
+        "first_name": "Eberhardt",
+        "last_name": "Terkki",
+        "gender": "M",
+        "hire_date": "1985-10-20"
+    },
+	{
+        "emp_no": 10016,
+        "birth_date": "1961-05-02",
+        "first_name": "Kazuhito",
+        "last_name": "Cappelletti",
+        "gender": "M",
+        "hire_date": "1995-01-27"
+    }
+]
+
+--> GET --> http://localhost:8090/jp/genesis/employees/10016
+--> GET --> http://localhost:8090/jp/genesis/employees
+
+
+
+
+** Developer notes - for reference **
+** Refer this link for more details: https://docs.spring.io/spring-data/gemfire/docs/current/reference/html/#preface
+
+--------(1) there are two types of cache instances that can be created with Pivotal GemFire: a client cache or a peer cache.
+@ClientCacheApplication: You can make your spring boot application as cache client using this annotation
+
+@PeerCacheApplication: The application itself is just another server in a cluster of servers that manages data in Pivotal GemFire cluster. It works as CacheServer and provides data to other clients. Applications servers as both Server and peer member of a cluster 
+
+@CacheServerApplication: Application purely servers as Data Server in the cluster.
+
+--------(2) Connection to locator, server and pool - client/server connection properties
+@EnablePool(name = "VenusPool", servers = @Server(host = "venus", port = 48484),
+    min-connections = 50, max-connections = 200, ping-internal = 15000,
+    prSingleHopEnabled = true, readTimeout = 20000, retryAttempts = 1,
+    subscription-enable = true)
+@EnablePools(pools = {
+    @EnablePool(name = "SaturnPool", locators = @Locator(host="skullbox", port=20668),
+        subsription-enabled = true),
+    @EnablePool(name = "NeptunePool", severs = {
+            @Server(host = "saturn", port = 41414),
+            @Server(host = "neptune", port = 42424)
+        }, min-connections = 25))
+})
+
+
+--------(3) We can configure Cache server with multiple name
+@SpringBootApplication
+@CacheSeverApplication(logLevel = "info", autoStartup = true, maxConnections = 100)
+@EnableCacheServer(name = "Venus", autoStartup = true,
+    hostnameForClients = "venus", port = 48484)
+@EnableCacheServers(servers = {
+    @EnableCacheServer(name = "Saturn", hostnameForClients = "saturn", port = 41414),
+    @EnableCacheServer(name = "Neptune", hostnameForClients = "neptune", port = 42424)
+})
+class ServerApplication { .. }
